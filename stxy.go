@@ -1,15 +1,14 @@
 package main
 
 import (
-	"bytes"
 	"encoding/csv"
-	"fmt"
-	"io/ioutil"
+	//"fmt"
+	"github.com/codeskyblue/go-sh"
+	"github.com/olekukonko/tablewriter"
 	//	"github.com/cactus/go-statsd-client/statsd"
 	"github.com/codegangsta/cli"
 	"github.com/fatih/color"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -41,22 +40,20 @@ func main() {
 	}
 	app.Action = func(c *cli.Context) {
 		for {
-			resp, err := http.Get(c.String("haproxy-url"))
-			if err != nil {
-				// handle error
-			}
-			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
-			n := bytes.IndexByte(body, 0)
-			s := string(body[:n])
-			r := csv.NewReader(strings.NewReader(s))
+			stats, _ := sh.Command("curl", c.String("haproxy-url")).Output()
+			r := csv.NewReader(strings.NewReader(string(stats)))
 			records, err := r.ReadAll()
 			if err != nil {
 				log.Fatal(err)
 			}
-
-			fmt.Print(records)
+			//fmt.Println(records)
+			table := tablewriter.NewWriter(os.Stdout)
+			for _, value := range records {
+				//fmt.Println(value)
+				table.Append(value)
+			}
 			//sendStats(c.String("statsd-host"), c.String("prefix"), gauges, counters)
+			table.Render()
 			color.White("-------------------")
 			interval, _ := strconv.ParseInt(c.String("interval"), 10, 64)
 			time.Sleep(time.Duration(interval) * time.Millisecond)
