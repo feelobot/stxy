@@ -2,6 +2,7 @@
 Haproxy Stats to StatsD written in Golang
 
 ### Stats Tracked:
+```
 admin.FRONTEND.scur:1|g
 admin.FRONTEND.smax:1|g
 admin.FRONTEND.ereq:0|g
@@ -18,6 +19,7 @@ admin.FRONTEND.qtime:0|g
 admin.FRONTEND.ctime:0|g
 admin.FRONTEND.rtime:0|g
 admin.FRONTEND.ttime:0|g
+```
 
 ### Adding more stats:
 ```
