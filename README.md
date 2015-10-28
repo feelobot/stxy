@@ -16,10 +16,10 @@ COMMANDS:
    help, h	Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --haproxy-url "localhost:22002/;csv"	host:port of redis servier
+   --haproxy-url "localhost:22002/;csv"	host:port of haproxy (keep the csv part)
    --statsd-url, -s "localhost:8125"	host:port of statsd server
    --prefix, -p "haproxy"		statsd namespace
-   --interval, -i "5000"		time in milliseconds to periodically check redis
+   --interval, -i "5000"		time in milliseconds to periodically check haproxy
    --help, -h				show help
    --version, -v			print the version
 ```
