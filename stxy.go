@@ -24,7 +24,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "haproxy-url",
 			Value: "localhost:22002/;csv",
-			Usage: "host:port of redis servier",
+			Usage: "host:port of haproxy server (keep csv part)",
 		},
 		cli.StringFlag{
 			Name:  "statsd-url, s",
@@ -38,7 +38,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "interval,i",
-			Usage: "time in milliseconds to periodically check redis",
+			Usage: "time in milliseconds to periodically check haproxy",
 			Value: "5000",
 		},
 	}
