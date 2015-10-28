@@ -1,6 +1,29 @@
 # stxy
 Haproxy Stats to StatsD written in Golang
 
+### Halp!
+```
+NAME:
+   stxy - haproxy stats to statsd
+
+USAGE:
+   stxy [global options] command [command options] [arguments...]
+
+VERSION:
+   0.0.1
+
+COMMANDS:
+   help, h	Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --haproxy-url "localhost:22002/;csv"	host:port of redis servier
+   --statsd-url, -s "localhost:8125"	host:port of statsd server
+   --prefix, -p "haproxy"		statsd namespace
+   --interval, -i "5000"		time in milliseconds to periodically check redis
+   --help, -h				show help
+   --version, -v			print the version
+```
+
 ### Stats Tracked:
 ```
 admin.FRONTEND.scur:1|g
