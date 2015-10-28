@@ -24,7 +24,7 @@ func main() {
 	app.Usage = "haproxy stats to statsd"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "haproxy-url, h",
+			Name:  "haproxy-url",
 			Value: "localhost:22002/;csv",
 			Usage: "host:port of redis servier",
 		},
@@ -41,7 +41,7 @@ func main() {
 	}
 	app.Action = func(c *cli.Context) {
 		for {
-			resp, err := http.Get(c.String("h"))
+			resp, err := http.Get(c.String("haproxy-url"))
 			if err != nil {
 				// handle error
 			}
