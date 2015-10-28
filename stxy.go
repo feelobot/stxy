@@ -36,10 +36,6 @@ func main() {
 			Usage: "statsd namespace",
 			Value: "haproxy",
 		},
-		cli.BoolFlag{
-			Name:  "verbose,v",
-			Usage: "show stats being submited",
-		},
 		cli.StringFlag{
 			Name:  "interval,i",
 			Usage: "time in milliseconds to periodically check redis",
