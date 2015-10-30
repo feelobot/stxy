@@ -18,7 +18,7 @@ func main() {
 	// init
 	app := cli.NewApp()
 	app.Name = "stxy"
-	app.Version = "0.0.2"
+	app.Version = "0.0.3"
 	app.Usage = "haproxy stats to statsd"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -84,7 +84,7 @@ func main() {
 }
 
 func send_stat(client statsd.Statter, v []string, name string, position int64) {
-	stat := fmt.Sprint(v[0], ".", v[1], ".", name)
+	stat := fmt.Sprint(v[0], ".", name)
 	value, _ := strconv.ParseInt(v[position], 10, 64)
 	fmt.Println(fmt.Sprint(stat, ":", value, "|g"))
 	client.Gauge(stat, value, 1.0)
