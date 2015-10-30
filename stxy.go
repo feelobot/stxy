@@ -24,7 +24,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "haproxy-url",
 			Value: "localhost:22002/;csv",
-			Usage: "host:port of haproxy server (keep csv part)",
+			Usage: "host:port of redis servier",
 		},
 		cli.StringFlag{
 			Name:  "statsd-url, s",
@@ -38,7 +38,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "interval,i",
-			Usage: "time in milliseconds to periodically check haproxy",
+			Usage: "time in milliseconds to periodically check redis",
 			Value: "5000",
 		},
 	}
@@ -84,8 +84,10 @@ func main() {
 }
 
 func send_stat(client statsd.Statter, v []string, name string, position int64) {
-	stat := fmt.Sprint(v[0], ".", name)
-	value, _ := strconv.ParseInt(v[position], 10, 64)
-	fmt.Println(fmt.Sprint(stat, ":", value, "|g"))
-	client.Gauge(stat, value, 1.0)
+	if v[1] == "BACKEND" {
+		stat := fmt.Sprint(v[0], ".", name)
+		value, _ := strconv.ParseInt(v[position], 10, 64)
+		fmt.Println(fmt.Sprint(stat, ":", value, "|g"))
+		client.Gauge(stat, value, 1.0)
+	}
 }
