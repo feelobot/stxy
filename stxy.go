@@ -24,7 +24,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "haproxy-url",
 			Value: "localhost:22002/;csv",
-			Usage: "host:port of redis servier",
+			Usage: "host:port of haproxy server",
 		},
 		cli.StringFlag{
 			Name:  "statsd-url, s",
@@ -38,8 +38,8 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "interval,i",
-			Usage: "time in milliseconds to periodically check redis",
-			Value: "5000",
+			Usage: "time in milliseconds",
+			Value: "10000",
 		},
 	}
 	app.Action = func(c *cli.Context) {
@@ -54,28 +54,31 @@ func main() {
 			stats, _ := sh.Command("curl", c.String("haproxy-url")).Output()
 			r := csv.NewReader(strings.NewReader(string(stats)))
 			records, err := r.ReadAll()
+			if records == nil {
+				log.Fatal("Unable to read stats from HaProxy")
+			}
 			if err != nil {
 				log.Fatal(err)
 			}
 			for _, v := range records {
-				send_stat(client, v, "scur", 4)
-				send_stat(client, v, "smax", 5)
-				send_stat(client, v, "ereq", 12)
-				send_stat(client, v, "econ", 13)
-				send_stat(client, v, "rate", 33)
-				send_stat(client, v, "bin", 8)
-				send_stat(client, v, "bout", 9)
-				send_stat(client, v, "hrsp_1xx", 39)
-				send_stat(client, v, "hrsp_2xx", 40)
-				send_stat(client, v, "hrsp_3xx", 41)
-				send_stat(client, v, "hrsp_4xx", 42)
-				send_stat(client, v, "hrsp_5xx", 43)
-				send_stat(client, v, "qtime", 58)
-				send_stat(client, v, "ctime", 59)
-				send_stat(client, v, "rtime", 60)
-				send_stat(client, v, "ttime", 61)
+				go send_stat(client, v, "scur", 4)
+				go send_stat(client, v, "smax", 5)
+				go send_stat(client, v, "ereq", 12)
+				go send_stat(client, v, "econ", 13)
+				go send_stat(client, v, "rate", 33)
+				go send_stat(client, v, "bin", 8)
+				go send_stat(client, v, "bout", 9)
+				go send_stat(client, v, "hrsp_1xx", 39)
+				go send_stat(client, v, "hrsp_2xx", 40)
+				go send_stat(client, v, "hrsp_3xx", 41)
+				go send_stat(client, v, "hrsp_4xx", 42)
+				go send_stat(client, v, "hrsp_5xx", 43)
+				go send_stat(client, v, "qtime", 58)
+				go send_stat(client, v, "ctime", 59)
+				go send_stat(client, v, "rtime", 60)
+				go send_stat(client, v, "ttime", 61)
 			}
-			color.White("-------------------")
+			color.Cyan("-------------------")
 			interval, _ := strconv.ParseInt(c.String("interval"), 10, 64)
 			time.Sleep(time.Duration(interval) * time.Millisecond)
 		}
