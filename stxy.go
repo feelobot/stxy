@@ -14,8 +14,10 @@ import (
 	"time"
 )
 
+var http_responses []string
+var initial_response_values map[string]int64
+
 func main() {
-	// init
 	app := cli.NewApp()
 	app.Name = "stxy"
 	app.Version = "0.0.3"
@@ -57,39 +59,69 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
+			get_initial_values(records)
+			interval, _ := strconv.ParseInt(c.String("interval"), 10, 64)
+			time.Sleep(time.Duration(interval) * time.Millisecond)
 			for _, v := range records {
 				if v[1] == "BACKEND" {
-					send_stat(client, v, "scur", 4)
-					send_stat(client, v, "smax", 5)
-					send_stat(client, v, "ereq", 12)
-					send_stat(client, v, "econ", 13)
-					send_stat(client, v, "rate", 33)
-					send_stat(client, v, "bin", 8)
-					send_stat(client, v, "bout", 9)
-					send_stat(client, v, "hrsp_1xx", 39)
-					send_stat(client, v, "hrsp_2xx", 40)
-					send_stat(client, v, "hrsp_3xx", 41)
-					send_stat(client, v, "hrsp_4xx", 42)
-					send_stat(client, v, "hrsp_5xx", 43)
-					send_stat(client, v, "qtime", 58)
-					send_stat(client, v, "ctime", 59)
-					send_stat(client, v, "rtime", 60)
-					send_stat(client, v, "ttime", 61)
+					send_gauge(client, v, "scur", 4)
+					send_gauge(client, v, "smax", 5)
+					send_gauge(client, v, "ereq", 12)
+					send_gauge(client, v, "econ", 13)
+					send_gauge(client, v, "rate", 33)
+					send_gauge(client, v, "bin", 8)
+					send_gauge(client, v, "bout", 9)
+					send_counter(client, v, "hrsp_1xx", 39)
+					send_counter(client, v, "hrsp_2xx", 40)
+					send_counter(client, v, "hrsp_3xx", 41)
+					send_counter(client, v, "hrsp_4xx", 42)
+					send_counter(client, v, "hrsp_5xx", 43)
+					send_gauge(client, v, "qtime", 58)
+					send_gauge(client, v, "ctime", 59)
+					send_gauge(client, v, "rtime", 60)
+					send_gauge(client, v, "ttime", 61)
 				}
 			}
 			color.White("-------------------")
-			interval, _ := strconv.ParseInt(c.String("interval"), 10, 64)
-			time.Sleep(time.Duration(interval) * time.Millisecond)
 		}
 	}
 	app.Run(os.Args)
 }
 
-func send_stat(client statsd.Statter, v []string, name string, position int64) {
-	if v[1] == "BACKEND" {
-		stat := fmt.Sprint(v[0], ".", name)
-		value, _ := strconv.ParseInt(v[position], 10, 64)
-		fmt.Println(fmt.Sprint(stat, ":", value, "|g"))
-		client.Gauge(stat, value, 1.0)
+func send_gauge(client statsd.Statter, v []string, name string, position int64) {
+	stat := fmt.Sprint(v[0], ".", name)
+	value, _ := strconv.ParseInt(v[position], 10, 64)
+	fmt.Println(fmt.Sprint(stat, ":", value, "|g"))
+	client.Gauge(stat, value, 1.0)
+}
+
+func send_counter(client statsd.Statter, v []string, name string, position int64) {
+	stat := fmt.Sprint(v[0], ".", name)
+	value_at_interval, _ := strconv.ParseInt(v[position], 10, 64)
+	value := value_at_interval - initial_response_values[name]
+	fmt.Println(fmt.Sprint(stat, ":", value, "|c"))
+	client.Inc(stat, value, 1)
+}
+
+func get_value(v []string, name string, position int64) int64 {
+	value, _ := strconv.ParseInt(v[position], 10, 64)
+	return value
+}
+
+func get_initial_values(records [][]string) {
+	http_responses := []string{"hsrp_1xx", "hsrp_2xx", "hsrp_3xx", "hsrp_4xx", "hsrp_5xx"}
+	initial_response_values := map[string]int64{
+		"hsrp_1xx": 0,
+		"hsrp_2xx": 0,
+		"hsrp_3xx": 0,
+		"hsrp_4xx": 0,
+		"hsrp_5xx": 0,
+	}
+	for _, v := range records {
+		var i int64 = 39
+		for _, resp := range http_responses {
+			initial_response_values[resp] = get_value(v, resp, i)
+			i += 1
+		}
 	}
 }
