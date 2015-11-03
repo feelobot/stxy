@@ -14,9 +14,6 @@ import (
 	"time"
 )
 
-var http_responses []string
-var initial_response_values map[string]int64
-
 func main() {
 	app := cli.NewApp()
 	app.Name = "stxy"
@@ -41,10 +38,11 @@ func main() {
 		cli.StringFlag{
 			Name:  "interval,i",
 			Usage: "time in milliseconds to periodically check redis",
-			Value: "5000",
+			Value: "10000",
 		},
 	}
 	app.Action = func(c *cli.Context) {
+		interval, _ := strconv.ParseInt(c.String("interval"), 10, 64)
 		for {
 			client, err := statsd.NewClient(c.String("s"), c.String("p"))
 			// handle any errors
@@ -53,36 +51,41 @@ func main() {
 			}
 			// make sure to clean up
 			defer client.Close()
-			stats, _ := sh.Command("curl", c.String("haproxy-url")).Output()
-			r := csv.NewReader(strings.NewReader(string(stats)))
-			records, err := r.ReadAll()
-			if err != nil {
-				log.Fatal(err)
-			}
-			get_initial_values(records)
-			interval, _ := strconv.ParseInt(c.String("interval"), 10, 64)
-			time.Sleep(time.Duration(interval) * time.Millisecond)
-			for _, v := range records {
+			initial_stats := get_stats(c.String("haproxy-url"))
+			previous := map[string]int64{}
+			for _, v := range initial_stats {
 				if v[1] == "BACKEND" {
-					send_gauge(client, v, "scur", 4)
-					send_gauge(client, v, "smax", 5)
-					send_gauge(client, v, "ereq", 12)
-					send_gauge(client, v, "econ", 13)
-					send_gauge(client, v, "rate", 33)
-					send_gauge(client, v, "bin", 8)
-					send_gauge(client, v, "bout", 9)
-					send_counter(client, v, "hrsp_1xx", 39)
-					send_counter(client, v, "hrsp_2xx", 40)
-					send_counter(client, v, "hrsp_3xx", 41)
-					send_counter(client, v, "hrsp_4xx", 42)
-					send_counter(client, v, "hrsp_5xx", 43)
-					send_gauge(client, v, "qtime", 58)
-					send_gauge(client, v, "ctime", 59)
-					send_gauge(client, v, "rtime", 60)
-					send_gauge(client, v, "ttime", 61)
+					previous[fmt.Sprint("1xx_", v[0])] = get_value(v, "hrsp_1xx", 39)
+					previous[fmt.Sprint("2xx_", v[0])] = get_value(v, "hrsp_2xx", 40)
+					previous[fmt.Sprint("3xx_", v[0])] = get_value(v, "hrsp_3xx", 41)
+					previous[fmt.Sprint("4xx_", v[0])] = get_value(v, "hrsp_4xx", 42)
+					previous[fmt.Sprint("5xx_", v[0])] = get_value(v, "hrsp_5xx", 43)
+				}
+			}
+			time.Sleep(time.Duration(interval) * time.Millisecond)
+			records := get_stats(c.String("haproxy-url"))
+			for _, record := range records {
+				if record[1] == "BACKEND" {
+					send_gauge(client, record, "scur", 4)
+					send_gauge(client, record, "smax", 5)
+					send_gauge(client, record, "ereq", 12)
+					send_gauge(client, record, "econ", 13)
+					send_gauge(client, record, "rate", 33)
+					send_gauge(client, record, "bin", 8)
+					send_gauge(client, record, "bout", 9)
+					send_counter(previous[fmt.Sprint("1xx_", record[0])], client, record, "hrsp_1xx", 39)
+					send_counter(previous[fmt.Sprint("2xx_", record[0])], client, record, "hrsp_2xx", 40)
+					send_counter(previous[fmt.Sprint("3xx_", record[0])], client, record, "hrsp_3xx", 41)
+					send_counter(previous[fmt.Sprint("4xx_", record[0])], client, record, "hrsp_4xx", 42)
+					send_counter(previous[fmt.Sprint("5xx_", record[0])], client, record, "hrsp_5xx", 43)
+					send_gauge(client, record, "qtime", 58)
+					send_gauge(client, record, "ctime", 59)
+					send_gauge(client, record, "rtime", 60)
+					send_gauge(client, record, "ttime", 61)
 				}
 			}
 			color.White("-------------------")
+			time.Sleep(time.Duration(interval) * time.Millisecond)
 		}
 	}
 	app.Run(os.Args)
@@ -95,10 +98,10 @@ func send_gauge(client statsd.Statter, v []string, name string, position int64) 
 	client.Gauge(stat, value, 1.0)
 }
 
-func send_counter(client statsd.Statter, v []string, name string, position int64) {
+func send_counter(previous int64, client statsd.Statter, v []string, name string, position int64) {
 	stat := fmt.Sprint(v[0], ".", name)
 	value_at_interval, _ := strconv.ParseInt(v[position], 10, 64)
-	value := value_at_interval - initial_response_values[name]
+	value := value_at_interval - previous
 	fmt.Println(fmt.Sprint(stat, ":", value, "|c"))
 	client.Inc(stat, value, 1)
 }
@@ -108,20 +111,12 @@ func get_value(v []string, name string, position int64) int64 {
 	return value
 }
 
-func get_initial_values(records [][]string) {
-	http_responses := []string{"hsrp_1xx", "hsrp_2xx", "hsrp_3xx", "hsrp_4xx", "hsrp_5xx"}
-	initial_response_values := map[string]int64{
-		"hsrp_1xx": 0,
-		"hsrp_2xx": 0,
-		"hsrp_3xx": 0,
-		"hsrp_4xx": 0,
-		"hsrp_5xx": 0,
+func get_stats(url string) [][]string {
+	stats, _ := sh.Command("curl", url).Output()
+	r := csv.NewReader(strings.NewReader(string(stats)))
+	records, err := r.ReadAll()
+	if err != nil {
+		log.Fatal(err)
 	}
-	for _, v := range records {
-		var i int64 = 39
-		for _, resp := range http_responses {
-			initial_response_values[resp] = get_value(v, resp, i)
-			i += 1
-		}
-	}
+	return records
 }
