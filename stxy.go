@@ -23,7 +23,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "haproxy-url",
 			Value: "localhost:22002/;csv",
-			Usage: "host:port of redis servier",
+			Usage: "host:port of haproxy server",
 		},
 		cli.StringFlag{
 			Name:  "statsd-url, s",
@@ -37,7 +37,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "interval,i",
-			Usage: "time in milliseconds to periodically check redis",
+			Usage: "time in milliseconds",
 			Value: "10000",
 		},
 	}
@@ -66,22 +66,22 @@ func main() {
 			records := get_stats(c.String("haproxy-url"))
 			for _, record := range records {
 				if record[1] == "BACKEND" {
-					send_gauge(client, record, "scur", 4)
-					send_gauge(client, record, "smax", 5)
-					send_gauge(client, record, "ereq", 12)
-					send_gauge(client, record, "econ", 13)
-					send_gauge(client, record, "rate", 33)
-					send_gauge(client, record, "bin", 8)
-					send_gauge(client, record, "bout", 9)
-					send_counter(previous[fmt.Sprint("1xx_", record[0])], client, record, "hrsp_1xx", 39)
-					send_counter(previous[fmt.Sprint("2xx_", record[0])], client, record, "hrsp_2xx", 40)
-					send_counter(previous[fmt.Sprint("3xx_", record[0])], client, record, "hrsp_3xx", 41)
-					send_counter(previous[fmt.Sprint("4xx_", record[0])], client, record, "hrsp_4xx", 42)
-					send_counter(previous[fmt.Sprint("5xx_", record[0])], client, record, "hrsp_5xx", 43)
-					send_gauge(client, record, "qtime", 58)
-					send_gauge(client, record, "ctime", 59)
-					send_gauge(client, record, "rtime", 60)
-					send_gauge(client, record, "ttime", 61)
+					go send_gauge(client, record, "scur", 4)
+					go send_gauge(client, record, "smax", 5)
+					go send_gauge(client, record, "ereq", 12)
+					go send_gauge(client, record, "econ", 13)
+					go send_gauge(client, record, "rate", 33)
+					go send_gauge(client, record, "bin", 8)
+					go send_gauge(client, record, "bout", 9)
+					go send_counter(previous[fmt.Sprint("1xx_", record[0])], client, record, "hrsp_1xx", 39)
+					go send_counter(previous[fmt.Sprint("2xx_", record[0])], client, record, "hrsp_2xx", 40)
+					go send_counter(previous[fmt.Sprint("3xx_", record[0])], client, record, "hrsp_3xx", 41)
+					go send_counter(previous[fmt.Sprint("4xx_", record[0])], client, record, "hrsp_4xx", 42)
+					go send_counter(previous[fmt.Sprint("5xx_", record[0])], client, record, "hrsp_5xx", 43)
+					go send_gauge(client, record, "qtime", 58)
+					go send_gauge(client, record, "ctime", 59)
+					go send_gauge(client, record, "rtime", 60)
+					go send_gauge(client, record, "ttime", 61)
 				}
 			}
 			color.White("-------------------")
