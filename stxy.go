@@ -17,7 +17,7 @@ import (
 func main() {
 	app := cli.NewApp()
 	app.Name = "stxy"
-	app.Version = "0.0.3"
+	app.Version = "0.0.4"
 	app.Usage = "haproxy stats to statsd"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
