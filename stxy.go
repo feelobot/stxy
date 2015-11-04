@@ -85,7 +85,6 @@ func main() {
 				}
 			}
 			color.White("-------------------")
-			time.Sleep(time.Duration(interval) * time.Millisecond)
 		}
 	}
 	app.Run(os.Args)
@@ -95,7 +94,10 @@ func send_gauge(client statsd.Statter, v []string, name string, position int64) 
 	stat := fmt.Sprint(v[0], ".", name)
 	value, _ := strconv.ParseInt(v[position], 10, 64)
 	fmt.Println(fmt.Sprint(stat, ":", value, "|g"))
-	client.Gauge(stat, value, 1.0)
+	err := client.Gauge(stat, value, 1.0)
+	if err != nil {
+		log.Printf("Error sending metric: %+v", err)
+	}
 }
 
 func send_counter(previous int64, client statsd.Statter, v []string, name string, position int64) {
@@ -103,7 +105,10 @@ func send_counter(previous int64, client statsd.Statter, v []string, name string
 	value_at_interval, _ := strconv.ParseInt(v[position], 10, 64)
 	value := value_at_interval - previous
 	fmt.Println(fmt.Sprint(stat, ":", value, "|c"))
-	client.Inc(stat, value, 1)
+	err := client.Inc(stat, value, 1)
+	if err != nil {
+		log.Printf("Error sending metric: %+v", err)
+	}
 }
 
 func get_value(v []string, name string, position int64) int64 {
